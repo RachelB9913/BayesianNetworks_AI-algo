@@ -1,3 +1,4 @@
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -6,26 +7,42 @@ import java.util.Map;
 public class Variable {
     private String name;
     private List<String> outcomes;
-    private List<Double> cpt;
+    private List<Double> probabilities;
     private List<String> parents;
     private List<String> children;
     private boolean isEvi=false;
     private int color; //0=white(unvisited) , 1=black(visited from child), 2=gray(visited from parent)
+    private Map<Map<String, String>, Double> CPTtable;
+    private Network network;
 
 
-    public Variable(String name) {
+    public Variable(String name, Network network) {
         this.name = name;
-        outcomes = new ArrayList<>();
-        cpt = new ArrayList<>();
-        parents = new ArrayList<>();
-        children = new ArrayList<>();
+        this.outcomes = new ArrayList<>();
+        this.probabilities = new ArrayList<>();
+        this.parents = new ArrayList<>();
+        this.children = new ArrayList<>();
+        this.network = network;
+        this.CPTtable = network.getCPT_tables().get(name);
+//        System.out.println("the cpt table for variable: "+ this.name + " is "+this.CPTtable);
     }
 
     public Variable() {
         this.outcomes = new ArrayList<>();
-        this.cpt = new ArrayList<>();
+        this.probabilities = new ArrayList<>();
         this.parents = new ArrayList<>();
         this.children = new ArrayList<>();
+        this.CPTtable = new HashMap<>();
+        this.network = null;
+    }
+
+    public Variable(Variable variable) {
+        this.name = variable.name;
+        this.outcomes = variable.outcomes;
+        this.probabilities = variable.probabilities;
+        this.parents = variable.parents;
+        this.children = variable.children;
+        this.CPTtable = variable.CPTtable;
     }
 
     public String getName() {
@@ -52,12 +69,20 @@ public class Variable {
         outcomes.add(outcome);
     }
 
-    public List<Double> getCPT() {
-        return cpt;
+    public List<Double> getPro() {
+        return probabilities;
     }
 
-    public void setCPT(List<Double> definitions) {
-        this.cpt = definitions;
+    public void setPro(List<Double> definitions) {
+        this.probabilities = definitions;
+    }
+
+    public Map<Map<String, String>, Double> getCPT() {
+        return CPTtable;
+    }
+
+    public void setCPT(String name, Network network) {
+      this.CPTtable = network.getCPT_tables().get(name);
     }
 
     public List<String> getParents() {
@@ -72,16 +97,16 @@ public class Variable {
         return children;
     }
 
-    public List<Double> getCpt() {
-        return cpt;
+    public List<Double> getProbabilities() {
+        return probabilities;
     }
 
     public void setOutcomes(List<String> outcomes) {
         this.outcomes = outcomes;
     }
 
-    public void setCpt(List<Double> cpt) {
-        this.cpt = cpt;
+    public void setProbabilities(List<Double> probabilities) {
+        this.probabilities = probabilities;
     }
 
     public void setParents(List<String> parents) {
@@ -104,9 +129,22 @@ public class Variable {
         this.color = color;
     }
 
+    public boolean isAncestorOf(Variable var,Network network){
+        if (var.getParents().contains(this.name)) {
+            return true;
+        }
+        for (String parentName : var.getParents()) {
+            Variable parent = network.getVariable(parentName);
+            if (parent != null && this.isAncestorOf(parent,network)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
-        return "{name='" + name + "', outcomes=" + outcomes+
+        return "{name='" + name + "', outcomes=" + outcomes+ ", cpt=" + CPTtable +
                 ", parents=" + parents + ", children=" + children+ ", color="+color+ ", evi?:" +isEvi+"}";
     }
 }

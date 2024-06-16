@@ -56,7 +56,7 @@ public class XMLParser {
                     for (String value : tableValues) {
                         table.add(Double.parseDouble(value));
                     }
-                    variable.setCPT(table);
+                    variable.setPro(table);
                     findChildren();
                 }
             }
@@ -97,7 +97,7 @@ public class XMLParser {
     private void populateCpts(Network network) {
         for (Variable variable : network.getVariables()) {
             Map<Map<String, String>, Double> cpt = new HashMap<>();
-            buildCpt(variable, new HashMap<>(), 0, network, cpt, variable.getCPT(), 0);
+            buildCpt(variable, new HashMap<>(), 0, network, cpt, variable.getPro(), 0);
             network.addCpt(variable.getName(), cpt);
         }
     }
@@ -147,23 +147,23 @@ public class XMLParser {
         return probability;
     }
 
-//    public static void printCpts(Network network) {
-//        for (Map.Entry<String, Map<Map<String, String>, Double>> entry : network.getCPT_tables().entrySet()) {
-//            String variableName = entry.getKey();
-//            System.out.println("Variable: " + variableName);
-//            for (Map.Entry<Map<String, String>, Double> cptEntry : entry.getValue().entrySet()) {
-//                Map<String, String> conditions = cptEntry.getKey();
-//                Double value = cptEntry.getValue();
-//                System.out.print("Given: ");
-//                conditions.forEach((key, val) -> {
-//                    if (!key.equals(variableName)) {
-//                        System.out.print(key + "=" + val + ", ");
-//                    }
-//                });
-//                System.out.println(variableName + "=" + conditions.get(variableName) + " => " + value);
-//            }
-//        }
-//    }
+    public void printCpts(Network network) {
+        for (Map.Entry<String, Map<Map<String, String>, Double>> entry : network.getCPT_tables().entrySet()) {
+            String variableName = entry.getKey();
+            System.out.println("Variable: " + variableName);
+            for (Map.Entry<Map<String, String>, Double> cptEntry : entry.getValue().entrySet()) {
+                Map<String, String> conditions = cptEntry.getKey();
+                Double value = cptEntry.getValue();
+                System.out.print("Given: ");
+                conditions.forEach((key, val) -> {
+                    if (!key.equals(variableName)) {
+                        System.out.print(key + "=" + val + ", ");
+                    }
+                });
+                System.out.println(variableName + "=" + conditions.get(variableName) + " => " + value);
+            }
+        }
+    }
 
     private List<String> getOutcomes(String variable, Network network) {
         Variable var = findVariable(variable, network.getVariables());
