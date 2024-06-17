@@ -144,7 +144,7 @@ public class Variable {
 
     @Override
     public String toString() {
-        return "{name='" + name + "', outcomes=" + outcomes+ ", cpt=" + CPTtable +
-                ", parents=" + parents + ", children=" + children+ ", color="+color+ ", evi?:" +isEvi+"}";
+        return "{name='" + name + "', outcomes=" + outcomes+ ", cpt=" + CPTtable +"}";
+//                ", parents=" + parents + ", children=" + children+ ", color="+color+ ", evi?:" +isEvi+"}";
     }
 }

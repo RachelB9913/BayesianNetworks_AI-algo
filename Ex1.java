@@ -1,72 +1,16 @@
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-
 public class Ex1 {
     public static void main(String[] args) throws IOException {
         XMLParser parser = new XMLParser();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("input.txt"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("input2.txt"))) {
             String networkName = reader.readLine();
-            Network network = parser.parseXML(networkName);
-            Factor.setNetwork(network);
-            System.out.println(network);
-
-            System.out.println();
-            parser.printCpts(network);
-            System.out.println();
-            Factor f1 = new Factor("A", network);
-            Factor f2 = new Factor("B", network);
-            Factor f3 = new Factor("E", network);
-            Factor f4 = new Factor("M", network);
-            Factor f5 = new Factor("J", network);
-            ArrayList<Factor> factors = new ArrayList<>();
-            factors.add(f1);
-            factors.add(f2);
-            factors.add(f3);
-            factors.add(f4);
-            factors.add(f5);
-            List<Variable> varss = f4.extractVariables(network);
-            System.out.println("varss "+varss);
-            Variable j = network.getVariable("J");
-            System.out.println("j "+j);
-            System.out.println("factor j" + f5);
-//            System.out.println("before sorting" + factors);
-//            int comp = f2.compareTo(f3);
-//            System.out.println(comp);
-//            Network.sortFactors(factors);
-//            System.out.println("after sorting" + factors);
-//            Map<Map<String, String>, Double> n = f4.joinFactors(f5.getCPT());
-//            System.out.println(n);
-//            System.out.println("mul " + Factor.mul);
-            //check if is an ancestor
-//            Variable v = new Variable("A",network);
-//            boolean av1 = v.isAncestorOf(network.getVariable("M"));
-//            System.out.println(av1);
-//            boolean av2 = v.isAncestorOf(network.getVariable("E"));
-//            System.out.println(av2);
-//            System.out.println("the parent of the 0 variable are: "+network.getVariables().get(0).getParents());
-//            System.out.println("the parent of the 1 variable are: "+network.getVariables().get(1).getParents());
-//            Map<Map<String, String>, Double> factor5 = f5.getCPT();
-//            System.out.println("factor 5: "+factor5);
-//            ArrayList<String> ev1 = new ArrayList<>();
-//            String j = "J";
-//            ev1.add(j);
-//            Factor.removeEvi(factor5,ev1);
-//            Factor.removeIrrelevant(factor5,ev1);
-//            System.out.println("after removing: "+factor5);
-//            System.out.println();
-//            Map<Map<String, String>, Double> factor1 = f1.getCPT();
-//            System.out.println("factor 1: "+factor1);
-//            ArrayList<String> ev2 = new ArrayList<>();
-//            String a = "A=T";
-//            ev2.add(a);
-//            Factor.removeIrrelevant(factor1,ev2);
-//            Factor.removeEvi(factor1,ev2);
-//            System.out.println("after removing: "+factor1);
+            Network mainNetwork = parser.parseXML(networkName);
+//            System.out.println(mainNetwork);
 
             String line;
             while ((line = reader.readLine()) != null) {
@@ -88,23 +32,12 @@ public class Ex1 {
                     String hiddenVarsPart = line.substring(endIndex + 2);  // Skip the space after ')'
                     List<String> hiddenVars = Arrays.asList(hiddenVarsPart.split("-"));
 
-
                     // Print the main variables of the query
                     System.out.println("VarEl: variable: " + queryVar + " \\ Evidence: " + evidenceVars + " \\ Hidden: " + hiddenVars);
+//                    System.out.println("the query var CPT before ans is: " + mainNetwork.getVariable(queryVar.split("=")[0]).getCPT());
 
-                    ArrayList<Factor> originalFactors = new ArrayList<>();
-                    ArrayList<Map<Map<String, String>, Double>> allCPTs = new ArrayList<>(); //contains all the cpts of the network
-                    for(Variable var : network.getVariables()){
-                        var = network.getVariable(var.getName());
-                        var.setCPT(var.getName(), network);
-                        allCPTs.add(var.getCPT());
-                        Factor factor = new Factor(var.getName(), network);
-                        originalFactors.add(factor);
-                        System.out.println("$$$$$$ORIGINAL FACTOR$$$$$$$ "+factor.getName()+" "+factor.getCPT());
-                    }
-
-                    // The salvation algorithm of the query:
-                    String ans = VarElSolve(network, queryVar, evidenceVars, hiddenVars, originalFactors);
+                    //the salvation algorithm of the query:
+                    String ans = VarElSolve(networkName, queryVar, evidenceVars, hiddenVars);//, originalFactors);
                     System.out.println(ans);
                     Factor.initializeCounters();
                     System.out.println();
@@ -119,12 +52,12 @@ public class Ex1 {
                     if (parts.length >= 1) {
                         String[] nodes = parts[0].split("-");
                         if (nodes.length == 2) {
-                            srcNode = parser.findVariable(nodes[0], network.getVariables());
-                            targetNode = parser.findVariable(nodes[1], network.getVariables());
+                            srcNode = parser.findVariable(nodes[0], mainNetwork.getVariables());
+                            targetNode = parser.findVariable(nodes[1], mainNetwork.getVariables());
                         }
                     }
                     // Parse the variables
-                    for (Variable var : network.getVariables()) { //reset all the variables to be not evidence
+                    for (Variable var : mainNetwork.getVariables()) { //reset all the variables to be not evidence
                         var.setEvi(false);
                     }
                     if (parts.length == 2) {
@@ -133,15 +66,17 @@ public class Ex1 {
                             String[] variableParts = condition.split("=");
                             if (variableParts.length == 2) {
                                 String var = variableParts[0];
-                                Variable variable = parser.findVariable(var, network.getVariables());
+                                Variable variable = parser.findVariable(var, mainNetwork.getVariables());
                                 variable.setEvi(true);
                                 eviVar.add(variable); // Update the instance variables directly
                             }
                         }
                     }
-                    // Print the main variables of the query
+//                     Print the main variables of the query
 //                    System.out.println("BayesBall Query: " + " Source: " + srcNode +
 //                                " \\ Target: " + targetNode + " \\ Variables: " + eviVar);
+
+                    System.out.println(independent(srcNode,targetNode,mainNetwork));
                 }
             }
         } catch (IOException e) {
@@ -240,17 +175,24 @@ public class Ex1 {
 
         //find not reachable variables
         List<Variable> notReachable = new ArrayList<>();
+//        List<Variable> corrected = new ArrayList<>();
         for (Variable var : network.getVariables()) {
             var.setCPT(var.getName(), network);
-            // If the variable is independent of the queryVar, it is not reachable
-//            System.out.println("the query var in pre: " + network.getVariable(queryVar));
+            if (evidenceVars.contains(var.getName())) {
+                var.setEvi(true);
+            }
+//            corrected.add(var);
+        }
+//        System.out.println("in pre process the network after evi: " + network);
+        // If the variable is independent of the queryVar, it is not reachable
+        for (Variable var :  network.getVariables()) {
             if (independent(network.getVariable(queryVar), var, network).equals("yes")) {
                 notReachable.add(var);
             }
         }
         //find non-relevant variables
         List<Variable> nonRelevantVars = new ArrayList<>();
-        System.out.println("query var suppose to be relevant: " + queryVar);
+//        System.out.println("query var suppose to be relevant: " + queryVar);
         for (Variable var : network.getVariables()) {
             boolean isAvOfQueryOrEvidence = var.isAncestorOf(network.getVariable(queryVar), network);
 //            System.out.println("Checking variable: " + var.getName() + " - Is ancestor of queryVar: " + isAvOfQueryOrEvidence);
@@ -310,128 +252,137 @@ public class Ex1 {
         return theRelevantFactors;
     }
 
-    public static String VarElSolve(Network network, String queryVar, List<String> evidenceVars, List<String> hiddenVars, ArrayList<Factor> originalFactors) {
-//        System.out.println("query var:" +queryVar);
+    public static String VarElSolve(String networkName, String queryVar, List<String> evidenceVars, List<String> hiddenVars) {//, ArrayList<Factor> originalFactors) {
+        XMLParser parser = new XMLParser();
+        Network currNet = parser.parseXML(networkName);
         String p;
         String ans;
-        List<String> vars = new ArrayList<>();
-        vars = new ArrayList<>(network.getAncestors(queryVar.split("=")[0]));
-        vars.add(queryVar.split("=")[0]);
-        System.out.println("parent variables: "+ vars);
+//        System.out.println("\nthe current network is: \n"+ currNet);
 
+//        System.out.println("query var:" + queryVar);
+        String queryName = queryVar.split("=")[0];
+        Variable Var = new Variable(queryName, currNet);
+//        System.out.println("the queryVar cpt is: " + Var.getCPT())
+
+
+        ArrayList<Factor> originalFactors = new ArrayList<>();
+        ArrayList<Map<Map<String, String>, Double>> allCPTs = new ArrayList<>(); //contains all the cpts of the network
+        for (Variable var : currNet.getVariables()) {
+            var = currNet.getVariable(var.getName());
+            var.setCPT(var.getName(), currNet);
+            allCPTs.add(var.getCPT());
+            Factor factor = new Factor(var.getName(), currNet);
+            originalFactors.add(factor);
+//            System.out.println("$$$$$$ORIGINAL FACTOR$$$$$$$ "+factor.getName()+" "+factor.getCPT());
+        }
         //initialize lists for evidence and its outcomes
         ArrayList<String> evidence = new ArrayList<>();
         ArrayList<String> evidenceOutcome = new ArrayList<>();
-        for (int i = 0; i < evidenceVars.size(); i++) {
-            String[] e = evidenceVars.get(i).split("=");
+        for (String evidenceVar : evidenceVars) {
+            String[] e = evidenceVar.split("=");
             evidence.add(e[0]);
             evidenceOutcome.add(e[1]);
         }
 
-        //initialize allFactors with factors ant their CPTs from the network
-//        for (Variable var : network.getVariables()) {
-//            allCPTs.add(network.getCPT_tables().get(var.getName()));
-//            Factor curr = new Factor(var.getName(), network);
-//            allFactors.add(curr);
-//            System.out.println("$$$$$$$$$$$$$$$$$$$ "+var.getName()+" "+var.getCPT());
-//
-//        }
-        ArrayList<Factor> allFactors = new ArrayList<>(0); //initializes to empty
-        System.out.println("suppose to be empty: "+ allFactors);
-        allFactors = network.copyFactors(originalFactors);
-        System.out.println("now full: "+ allFactors);
+        //check if the answer to the query already exists in the cpts
+        for(Factor factor : originalFactors){
+            Map<Map<String,String>,Double> currCPT = factor.getCPT();
+            Set<Map<String,String>> inners = currCPT.keySet();
+            Map<String,String> querySet = new HashMap<>();
+            querySet.put(queryName,queryVar.split("=")[1]); //the query itself - for exapmle: J=T
+            for(int i=0; i<evidenceVars.size();i++){
+                querySet.put(evidence.get(i),evidenceOutcome.get(i));
+            }
+            if(inners.contains(querySet)){
+                double pro = currCPT.get(querySet);
 
-
-        System.out.println("@@@@@@@@@@@@@@@@@@@@ originalFactors " + originalFactors );
-        System.out.println("@@@@@@@@@@@@@@@@@@@@ allFactors "+allFactors);
-
-
-        //setting the factor variables correctly for each factor
-        for (Factor factor : allFactors) {
-            factor.setFactorVars(factor.extractVariables(network));
-            if(!factor.getFactorVars().contains(factor.getName())){
-                factor.addVar(network.getVariable(factor.getName()));
+                ans = pro + "," + Factor.add + "," + Factor.mul;
+                return ans;
             }
         }
-//        for(Factor factor : allFactors){
-//            System.out.println("for: "+factor.getName()+ "the vars are: "+factor.getFactorVars());
-//        }
 
+        ArrayList<Factor> allFactors = new ArrayList<>(0); //initializes to empty
+//        System.out.println("suppose to be empty: " + allFactors);
+        allFactors = currNet.copyFactors(originalFactors);
+//        System.out.println("now full: " + allFactors);
+
+        System.out.println("@@@@@@@@@@@@@@@@@@@@ originalFactors " + originalFactors);
+        System.out.println("@@@@@@@@@@@@@@@@@@@@ allFactors " + allFactors);
+
+//        System.out.println();
         System.out.println("allFactors before preProcess" + allFactors);
-        ArrayList<Factor> relevant = preProcess(network, vars.get(0), evidence, hiddenVars);
-        System.out.println("allFactors after preProcess" + relevant);
+        ArrayList<Factor> relevant = preProcess(currNet, queryName, evidence, hiddenVars);
+        System.out.println("relevant after preProcess" + relevant);
+//        System.out.println();
 
         //getting a list of the names of the evidence variables
-        ArrayList<String> eviNames = new ArrayList<>();
-        for (String evi : evidenceVars) {
-            eviNames.add(evi);
-        }
+        ArrayList<String> eviNames = new ArrayList<>(evidenceVars);
 
-        System.out.println("--------------------------------------------------------------- ");
-        System.out.println("before: ");
-        for (Factor value : allFactors) {
-            System.out.println(value);
-        }
+//        System.out.println("--------------------------------------------------------------- ");
+//        System.out.println("before removing all the non relevant: " + originalFactors);
+//
+//        System.out.println("relevant before: ");
+//        for (Factor value : relevant) {
+//            System.out.println(value);
+//        }
         //remove the irrelevant rows and the evidence
-        for (Factor factor : allFactors) {
-            Factor.removeIrrelevant(factor.getCPT(), evidenceVars);
+        for (Factor factor : relevant) {
+            factor.removeIrrelevant(evidenceVars);
             factor.removeEvi(eviNames);
         }
-        System.out.println("after: ");
-        for (Factor allFactor : allFactors) {
-            System.out.println(allFactor);
-        }
-        System.out.println("--------------------------------------------------------------- ");
+//        System.out.println("after: ");
+//        for (Factor allFactor : relevant) {
+//            System.out.println(allFactor);
+//        }
+//        System.out.println("after removing all the non relevant: " + relevant);
+//        System.out.println("--------------------------------------------------------------- ");
 
 
         //removing factors of size 1
-        for (int i = 0; i < allFactors.size(); i++) {
-            if (allFactors.get(i).getCPT().size() == 1) {
-                allFactors.remove(i);
+        for (int i = 0; i < relevant.size(); i++) {
+            if (relevant.get(i).getCPT().size() == 1) {
+                relevant.remove(i);
                 if (i > 0) i--;
             }
         }
-//        System.out.println("after removing of size 1: ");
-//        for (Factor aFactor : allFactors) {
-//            System.out.println(aFactor.getName()+ " size of cpt: "+aFactor.getCPT().size()+" "+aFactor.getCPT());
-//        }
 
         // sorting all the factors by size and ASCII
-        network.sortFactors(allFactors);
-        System.out.println("all factors sorted: " + allFactors);
+        currNet.sortFactors(relevant);
+//        System.out.println("all factors sorted: " + relevant);
 
-        Factor f1 = new Factor(network);
-        System.out.println("factor 1: " + f1);
-        Factor f2 = new Factor(network);
-        System.out.println("factor 2: " + f2);
-        int loop=0;
-        while (loop<hiddenVars.size()) {
+        Factor f1 = new Factor(currNet);
+//        System.out.println("factor 1: " + f1);
+        Factor f2 = new Factor(currNet);
+//        System.out.println("factor 2: " + f2);
+        int loop = 0;
+        while (loop < hiddenVars.size()) {
             String hiddenVar = hiddenVars.get(loop);
             System.out.println(" hidden: " + hiddenVar);
 
-            for (int i = 0; i < allFactors.size(); i++) {
-                Factor currentFactor = allFactors.get(i);
+            for (int i = 0; i < relevant.size(); i++) {
+                Factor currentFactor = relevant.get(i);
                 ArrayList<Factor> containsHidden = new ArrayList<>();
-                for(Factor factor : allFactors) {
-                    if (factor.containsVar(hiddenVar)) {
+                for (Factor factor : relevant) {
+                    //System.out.println("current Var: "+factor.getName()+" check if contains "+hiddenVar+": " + currentFactor);
+                    if (factor.containsVar(currNet, hiddenVar)) {
                         containsHidden.add(factor);
                     }
                 }
-                System.out.println("containsHidden: " + containsHidden);
-                if(containsHidden.size()==1){
-                    System.out.println("containsHidden is of size (1): " + containsHidden.size() +"  "+ containsHidden);
+//                System.out.println("containsHidden: " + containsHidden);
+                if (containsHidden.size() == 1) {
+//                    System.out.println("containsHidden is of size (1): " + containsHidden.size() + "  " + containsHidden);
                     Factor onlyFactor = containsHidden.get(0);
-                    System.out.println("onlyFactor: " + onlyFactor + " hidden:"+hiddenVar);
-                    Factor eliminatedFactor = onlyFactor.eliminateVar(hiddenVar);
+//                    System.out.println("onlyFactor: " + onlyFactor + " hidden:" + hiddenVar);
+                    Factor eliminatedFactor = onlyFactor.eliminateVar(currNet, hiddenVar);
                     System.out.println("after elimination: " + eliminatedFactor);
-                    allFactors.remove(onlyFactor);
-                    allFactors.add(eliminatedFactor);
+                    relevant.remove(onlyFactor);
+                    relevant.add(eliminatedFactor);
                     break;
                 }
 
-                System.out.println("current factor: " + currentFactor);
-                if (currentFactor.containsVar(hiddenVar)) {
-                    System.out.println("current factor contains: " + hiddenVar + " f1 is: " + f1 + "  f2 is: " + f2);
+//                System.out.println("current factor: " + currentFactor);
+                if (currentFactor.containsVar(currNet, hiddenVar)) {
+//                    System.out.println("current factor contains: " + hiddenVar + " f1 is: " + f1 + "  f2 is: " + f2);
                     if (f1.getCPT().isEmpty()) {
                         f1 = currentFactor;
                         System.out.println("changed f1: " + f1);
@@ -439,120 +390,83 @@ public class Ex1 {
                     } else if (f2.getCPT().isEmpty()) {
                         f2 = currentFactor;
                         System.out.println("changed f2: " + f2);
-
-                    } else {
-                        Factor f = new Factor(f1.joinFactors(f2));
-                        List<Variable> joinedVariables = f.extractVariables(network);
+                    }
+                    else {
+                        Factor f = new Factor(f1.joinFactors(currNet, f2));
+                        List<Variable> joinedVariables = f.extractVariables(currNet);
                         System.out.println("joinedVariables: " + joinedVariables);
-
                         System.out.println("joined: " + f);
 
-                        allFactors.remove(f1); containsHidden.remove(f1);
-                        allFactors.remove(f2); containsHidden.remove(f2);
-                        allFactors.add(f); containsHidden.add(f);
-                        network.sortFactors(allFactors);
-                        f1 = new Factor(network);
-                        f2 = new Factor(network);
+                        relevant.remove(f1);
+                        containsHidden.remove(f1);
+                        relevant.remove(f2);
+                        containsHidden.remove(f2);
+                        relevant.add(f);
+                        containsHidden.add(f);
+                        currNet.sortFactors(relevant);
+                        f1 = new Factor(currNet);
+                        f2 = new Factor(currNet);
                         i = 0;
                     }
                 }
                 if (!f1.getCPT().isEmpty() && !f2.getCPT().isEmpty()) {
-                    Factor f = new Factor(f1.joinFactors(f2));
-                    List<Variable> joinedVariables = f.extractVariables(network);
-//                    System.out.println("joinedVariables: " + joinedVariables);
+                    Factor f = new Factor(f1.joinFactors(currNet, f2));
+                    List<Variable> joinedVariables = f.extractVariables(currNet);
+                    System.out.println("joinedVariables: " + joinedVariables);
                     f.setFactorVars(joinedVariables);
                     System.out.println("joined: " + f);
-                    allFactors.remove(f1);
-                    System.out.println("f1 was removed " + allFactors);
-                    allFactors.remove(f2);
-                    System.out.println("f2 was removed " + allFactors);
-                    allFactors.add(f);
-                    System.out.println("after join, remove and add: " + allFactors);
-                    network.sortFactors(allFactors);
-                    System.out.println("after sort: " + allFactors);
+                    relevant.remove(f1);
+                    System.out.println("f1 was removed " + relevant);
+                    relevant.remove(f2);
+                    System.out.println("f2 was removed " + relevant);
+                    relevant.add(f);
+                    System.out.println("after join, remove and add: " + relevant);
+                    currNet.sortFactors(relevant);
+                    System.out.println("after sort: " + relevant);
 
-                    f1 = new Factor(network);
-                    f2 = new Factor(network);
-                    i=-1;
-                    System.out.println("size: "+allFactors.size()+" all factors first: "+allFactors.get(0));
-                    System.out.println("after emptyCPT: f1 " + f1 + " f2 " + f2);
-                    System.out.println();
+                    f1 = new Factor(currNet);
+                    f2 = new Factor(currNet);
+                    i = -1;
+//                    System.out.println("size: " + relevant.size() + " all factors first: " + relevant.get(0));
+//                    System.out.println("after emptyCPT: f1 " + f1 + " f2 " + f2);
+//                    System.out.println();
                 }
             }
 
-            System.out.println("went over all factors for this hidden var " + hiddenVars.getFirst());
-
-            //hiddenVars.remove(hiddenVars.getFirst());
+//            System.out.println("went over all factors for this hidden var " + hiddenVars.getFirst());
             loop++;
-            System.out.println("loop: " +loop);
+//            System.out.println("loop: " + loop);
 
-            if(loop<hiddenVars.size()) {
-                System.out.println("hidden vars now start with: " + hiddenVars.get(loop));
-            }
+//            if (loop < hiddenVars.size()) {
+//                System.out.println("hidden vars now start with: " + hiddenVars.get(loop));
+//            }
         }
 
-        System.out.println("the last factors are: " + allFactors);
-        if(allFactors.size()>1) {
-            int i=0;
-            while (allFactors.size() > 1) {
-                Factor fac1 = allFactors.get(i);
-                Factor fac2 = allFactors.get(i+1);
-                Factor joinedFac = fac1.joinFactors(fac2);
-                allFactors.remove(fac1); allFactors.remove(fac2);
-                allFactors.add(joinedFac);
-                System.out.println("LAST: after join, remove and add: " + allFactors);
+//        System.out.println("the last factors are: " + relevant);
+        if (relevant.size() > 1) {
+            int i = 0;
+            while (relevant.size() > 1) {
+                Factor fac1 = relevant.get(i);
+                Factor fac2 = relevant.get(i + 1);
+                Factor joinedFac = fac1.joinFactors(currNet, fac2);
+                relevant.remove(fac1);
+                relevant.remove(fac2);
+                relevant.add(joinedFac);
+//                System.out.println("LAST: after join, remove and add: " + relevant);
             }
         }
-        Factor theNeeded = allFactors.get(0);
-        System.out.println("theNeeded: " + theNeeded);
+        Factor theNeeded = relevant.get(0);
+//        System.out.println("theNeeded: " + theNeeded);
         theNeeded.normalize();
-        System.out.println("afterNormalization: " + theNeeded);
+//        System.out.println("afterNormalization: " + theNeeded);
         String[] query = queryVar.split("=");
-        Map<String,String> theQuery = new HashMap<>();
-        theQuery.put(query[0],query[1]);
+        Map<String, String> theQuery = new HashMap<>();
+        theQuery.put(query[0], query[1]);
         Double pro = theNeeded.getCPT().get(theQuery);
         p = String.format("%.5f", pro);
+//        System.out.println("at the end the originals are: " + originalFactors);
 
         ans = p + "," + Factor.add + "," + Factor.mul;
         return ans;
     }
 }
-
-
-//CHECK PRINTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// For demonstration, print the parsed data
-//        System.out.println("Variables:");
-//        for (Variable var : network.getVariables()) {
-//            //System.out.println("Name: " + var.getName() + ", Outcomes: " + var.getOutcomes());
-//            System.out.println(var);
-//        }
-//        System.out.println();
-//
-//        System.out.println("CPTs:");
-//        for (Map.Entry<String, Map<Map<String, String>, Double>> entry : network.getCPT_tables().entrySet()) {
-//            System.out.println("Variable: " + entry.getKey());
-//            for (Map.Entry<Map<String, String>, Double> cptEntry : entry.getValue().entrySet()) {
-//                System.out.println("Given: " + cptEntry.getKey() + " => " + cptEntry.getValue());
-//            }
-//        }
-////      System.out.println("CPTs:");
-////      XMLParser.printCpts(network);
-//        System.out.println();
-//
-//        Map<String, String> givenConditions = new HashMap<>();
-////      givenConditions.put("B", "F");
-//        givenConditions.put("A", "F");
-//        Double probability = parser.getProbability(network, "J", "F", givenConditions);
-//        System.out.println("you get:  " + probability);
-
-//SOME MORE CHECKS!!!!!!!!! - DELETE AFTER
-//        System.out.println();
-//        Variable v1 = XMLParser.findVariable("E",network.getVariables());
-//        Variable v2 = XMLParser.findVariable("A",network.getVariables());
-//        Variable v3 = XMLParser.findVariable("M",network.getVariables());
-//        System.out.println(v1);
-//        System.out.println(v2);
-//        System.out.println(v3);
-
-
-

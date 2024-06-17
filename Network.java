@@ -87,9 +87,9 @@ public class Network {
         int n = factors.size();
         for (int i = 0; i < n - 1; i++) {
             for (int j = 0; j < n - i - 1; j++) {
-                Factor f1 = new Factor();
+                Factor f1 = new Factor(this);
                 f1.setTheCPT(factors.get(j).getCPT());
-                Factor f2 = new Factor();
+                Factor f2 = new Factor(this);
                 f2.setTheCPT(factors.get(j + 1).getCPT());
 
                 if (f1.compareTo(f2) > 0) {
@@ -120,10 +120,17 @@ public class Network {
     public ArrayList<Factor> copyFactors(ArrayList<Factor> factors){
         ArrayList<Factor> factorsCopy = new ArrayList<>();
         for(Factor factor: factors){
-            Factor copyFactor = new Factor();
+            Factor copyFactor = new Factor(this);
             copyFactor.setTheCPT(factor.getCPT());
             copyFactor.setName(factor.getName());
             factorsCopy.add(copyFactor);
+        }
+        //setting the factor variables correctly for each factor
+        for (Factor factor : factorsCopy) {
+            factor.setFactorVars(factor.extractVariables(this));
+            if(!factor.getFactorVars().contains(factor.getName())){
+                factor.addVar(this.getVariable(factor.getName()));
+            }
         }
         return factorsCopy;
     }

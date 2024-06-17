@@ -1,9 +1,12 @@
+import org.junit.platform.engine.support.descriptor.FileSystemSource;
+import org.w3c.dom.ls.LSOutput;
+
 import java.util.*;
 
 public class Factor implements Comparable<Factor> {
 
     private String name;
-    private static Network network;
+    private Network network;
     private List<Variable> factorVars;
     private Map<Map<String, String>, Double> theCPT;
     public static int mul = 0;
@@ -11,17 +14,19 @@ public class Factor implements Comparable<Factor> {
 
     public Factor(String name, Network network) {
         this.name = name;
+        this.network = network;
         this.theCPT = network.getCPT_tables().get(name);
         this.factorVars = this.extractVariables(network);
     }
 
-    public Factor() {
-        this.theCPT = new HashMap<>(0);
-        this.factorVars = this.extractVariables(network);
-
-    }
+//    public Factor() {
+//        this.theCPT = new HashMap<>(0);
+//        this.factorVars = this.extractVariables(network);
+//
+//    }
 
     public Factor(Network network) {
+        this.network = network;
         this.theCPT = new HashMap<>(0);
         this.factorVars = this.extractVariables(network);
 //        this.factorVars = new ArrayList<>();
@@ -30,6 +35,7 @@ public class Factor implements Comparable<Factor> {
 
     public Factor(Network network, Map<Map<String, String>, Double> theCPT) {
         this.name = network.findName(network.getCPT_tables(), theCPT);
+        this.network = network;
         this.theCPT = theCPT;
         this.factorVars = new ArrayList<>();
         factorVars = this.extractVariables(network);
@@ -37,8 +43,9 @@ public class Factor implements Comparable<Factor> {
 
     //copy constructor
     public Factor(Factor other) {
-        this.name = other.name;
-        this.theCPT = other.theCPT;
+        this.name = other.getName();
+        this.theCPT = other.getCPT();
+        this.network = other.getNetwork();
         this.factorVars =this.extractVariables(network);
 //        factorVars = extractVariables(this.theCPT,other.network);
 //        System.out.println("theCPT "+this.theCPT);
@@ -50,7 +57,7 @@ public class Factor implements Comparable<Factor> {
         add = 0;
     }
 
-    public boolean containsVar(String var) {
+    public boolean containsVar(Network network, String var) {
         return factorVars.contains(network.getVariable(var));
     }
 
@@ -74,7 +81,7 @@ public class Factor implements Comparable<Factor> {
 
     //removes from the cpt all the maps where in the inner map Map<String, String>
     //the key is as the evidence variable but the value is not the outcome given
-    public static void removeIrrelevant(Map<Map<String, String>, Double> currCPT, List<String> eviVar) {
+    public void removeIrrelevant(List<String> eviVar) {
         ArrayList<String> evidence = new ArrayList<>();
         for(String var : eviVar) {
             String[] e = var.split("=");
@@ -82,7 +89,7 @@ public class Factor implements Comparable<Factor> {
         }
 
         ArrayList<Map<String, String>> varsToRemove = new ArrayList<>();
-        for (Map<String, String> key : currCPT.keySet()) {
+        for (Map<String, String> key : this.theCPT.keySet()) {
             for (String s : key.keySet()) {
                 for (int j = 0; j < evidence.size() - 1; j += 2) {
                     if (evidence.get(j).equals(s) && !evidence.get(j + 1).equals(key.get(s))) {
@@ -92,7 +99,7 @@ public class Factor implements Comparable<Factor> {
             }
         }
         for (Map<String, String> innerMap : varsToRemove) {
-            currCPT.remove(innerMap);
+            this.theCPT.remove(innerMap);
         }
 //        System.out.println("cpt after remove irrelevant: " + currCPT);
     }
@@ -130,8 +137,8 @@ public class Factor implements Comparable<Factor> {
         return network;
     }
 
-    public static void setNetwork(Network network) {
-        Factor.network = network;
+    public void setNetwork(Network network) {
+        this.network = network;
     }
 
     public List<Variable> getFactorVars() {
@@ -160,8 +167,8 @@ public class Factor implements Comparable<Factor> {
     //works!! -
     //given a factor it finds the common variable with the current one
     public Set<Variable> findCommonVariables(Map<Map<String, String>, Double> cpt) {
-        List<Variable> variables1 = extractVariables(network);
-        List<Variable> variables2 = extractVariables(network);
+        List<Variable> variables1 = extractVariables(this.network);
+        List<Variable> variables2 = extractVariables(this.network);
 
         // Find the intersection of the two sets (common variables)
         Set<Variable> commonVariables = new HashSet<>(variables1);
@@ -182,7 +189,7 @@ public class Factor implements Comparable<Factor> {
         }
         List<Variable> variables = new ArrayList<>();
         for (String name : variableNames) {
-            Variable v = network.getVariable(name);
+            Variable v = this.network.getVariable(name);
             variables.add(v);
         }
         return variables;
@@ -191,8 +198,8 @@ public class Factor implements Comparable<Factor> {
     //
     //eliminating a specific variable from each factor in the factor map while summing up the probabilities of
     //lines that share the same values for all other variables.
-    public Factor eliminateVar(String variable) {
-        Factor newFactor = new Factor();
+    public Factor eliminateVar(Network network, String variable) {
+        Factor newFactor = new Factor(network);
         newFactor.setName("the last");
 
         for (Map.Entry<Map<String, String>, Double> entry : this.theCPT.entrySet()) {
@@ -222,9 +229,9 @@ public class Factor implements Comparable<Factor> {
     }
 
 
-    public Factor joinFactors(Factor factor) {
+    public Factor joinFactors(Network network, Factor factor) {
         Map<Map<String, String>, Double> resultCPT = new HashMap<>();
-        Factor resultFactor = new Factor();
+        Factor resultFactor = new Factor(network);
         resultFactor.setName(this.getName()+factor.getName());
 
         Set<Variable> commonVariables = findCommonVariables(factor.theCPT);
@@ -285,6 +292,7 @@ public class Factor implements Comparable<Factor> {
             double normValue = theCPT.get(key)/sum;
             this.theCPT.put(key, normValue);
         }
+        Factor.add--;
     }
 
     public void addVar (Variable var) {
@@ -303,7 +311,7 @@ public class Factor implements Comparable<Factor> {
         return allVariables;
     }
 
-    private static boolean isConsistent(Map<String, String> assignment1, Map<String, String> assignment2, Set<Variable> commonVariables) {
+    private boolean isConsistent(Map<String, String> assignment1, Map<String, String> assignment2, Set<Variable> commonVariables) {
         for (Variable Var : commonVariables) {
             String var = Var.getName();
             if (assignment1.containsKey(var) && assignment2.containsKey(var) && !assignment1.get(var).equals(assignment2.get(var))) {
