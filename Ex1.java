@@ -7,7 +7,7 @@ public class Ex1 {
         String filePath = "output.txt";
         BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true));
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("input3.txt"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("input.txt"))) {
             String networkName = reader.readLine();
             Network mainNetwork = parser.parseXML(networkName);
 
